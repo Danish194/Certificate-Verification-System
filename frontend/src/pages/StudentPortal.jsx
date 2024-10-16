@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import CertificateTemplate from './CertificateTemplate';
+import React, { useState } from "react";
+import axios from "axios";
+import CertificateTemplate from "../components/CertificateTemplate";
 
 const StudentPortal = () => {
-  const [certificateId, setCertificateId] = useState('');
+  const [certificateId, setCertificateId] = useState("");
   const [certificate, setCertificate] = useState(null);
 
   const handleSearch = async () => {
@@ -11,7 +11,7 @@ const StudentPortal = () => {
       const response = await axios.get(`/api/certificates/${certificateId}`);
       setCertificate(response.data);
     } catch (error) {
-      alert('Certificate not found');
+      alert("Certificate not found");
     }
   };
 

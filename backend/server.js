@@ -1,22 +1,31 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const cors = require('cors');
-const connectDB = require('./config/db'); // MongoDB connection
-const certificateRoutes = require('./routes/certificateRoutes');
-const authRoutes = require('./routes/authRoutes'); // Optional if using Firebase for Auth
+import express from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import { connectDB } from './config/db.js';
+import authRoutes from './routes/authRoutes.js';
+import certificateRoutes from './routes/certificateRoutes.js';
+import { errorHandler } from './middleware/errorMiddleware.js';
 
+// Load environment variables
 dotenv.config();
-connectDB(); // Connect to MongoDB
 
 const app = express();
-app.use(cors()); // Enable Cross-Origin Requests
-app.use(express.json()); // Parse incoming JSON requests
+const PORT = process.env.PORT || 5000;
+
+// Middlewares
+app.use(cors());
+app.use(express.json());
+
+// Database connection
+connectDB();
 
 // Routes
-app.use('/api/certificates', certificateRoutes); // Certificate management routes
-app.use('/api/auth', authRoutes); // Auth routes (optional)
+app.use('/api/auth', authRoutes);
+app.use('/api/certificates', certificateRoutes);
 
-const PORT = process.env.PORT || 5000;
+// Global Error Handler
+app.use(errorHandler);
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

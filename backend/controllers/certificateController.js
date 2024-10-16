@@ -1,46 +1,45 @@
-const Certificate = require('../models/Certificate');
-const exceljs = require('exceljs');
+import asyncHandler from 'express-async-handler';
+import xlsx from 'xlsx';
+import { Certificate } from '../models/Certificate.js';
+import { generateCertificatePDF } from '../utils/pdfGenerator.js';
 
-// Upload Excel data and store it in MongoDB
-const uploadCertificates = async (req, res) => {
-  try {
-    const workbook = new exceljs.Workbook();
-    await workbook.xlsx.load(req.file.buffer);
-    const worksheet = workbook.getWorksheet(1);
+// Upload and process Excel file
+export const uploadCertificateData = asyncHandler(async (req, res) => {
+    const workbook = xlsx.readFile(req.file.path);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = xlsx.utils.sheet_to_json(sheet);
 
-    worksheet.eachRow({ includeEmpty: false }, async (row) => {
-      const [certificateId, studentName, internshipDomain, startDate, endDate] = row.values;
-      const newCertificate = new Certificate({
-        certificateId,
-        studentName,
-        internshipDomain,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate)
-      });
-      await newCertificate.save();
-    });
+    // Store data in MongoDB
+    await Certificate.insertMany(data);
 
-    res.status(200).json({ message: 'Certificates uploaded successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to upload certificates' });
-  }
-};
+    res.status(201).json({ message: 'Data uploaded successfully' });
+});
 
-// Get a certificate by certificateId
-const getCertificateById = async (req, res) => {
-  const { certificateId } = req.params;
-
-  try {
+// Retrieve certificate details by ID
+export const getCertificate = asyncHandler(async (req, res) => {
+    const { certificateId } = req.params;
     const certificate = await Certificate.findOne({ certificateId });
 
     if (!certificate) {
-      return res.status(404).json({ message: 'Certificate not found' });
+        res.status(404);
+        throw new Error('Certificate not found');
     }
 
-    res.status(200).json(certificate);
-  } catch (error) {
-    res.status(500).json({ error: 'Error fetching certificate' });
-  }
-};
+    res.json(certificate);
+});
 
-module.exports = { uploadCertificates, getCertificateById };
+// Generate and download certificate PDF
+export const downloadCertificate = asyncHandler(async (req, res) => {
+    const { certificateId } = req.params;
+    const certificate = await Certificate.findOne({ certificateId });
+
+    if (!certificate) {
+        res.status(404);
+        throw new Error('Certificate not found');
+    }
+
+    const pdfBuffer = await generateCertificatePDF(certificate);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${certificateId}.pdf`);
+    res.send(pdfBuffer);
+});

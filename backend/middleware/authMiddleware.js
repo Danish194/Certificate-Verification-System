@@ -1,24 +1,26 @@
-const admin = require('firebase-admin');
+import jwt from 'jsonwebtoken';
+import asyncHandler from 'express-async-handler';
+import admin from 'firebase-admin';
 
-// Initialize Firebase Admin SDK
-admin.initializeApp({
-  credential: admin.credential.cert({
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-  })
-});
-
-const verifyToken = async (req, res, next) => {
-  const token = req.header('Authorization').replace('Bearer ', '');
-
-  try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    req.user = decodedToken;
-    next();
-  } catch (error) {
-    res.status(401).json({ message: 'Unauthorized access' });
+// Middleware for protected routes
+export const protect = asyncHandler(async (req, res, next) => {
+  let token;
+  
+  // Check if the token exists in the request headers
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    try {
+      token = req.headers.authorization.split(' ')[1];
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      req.user = decodedToken;
+      next();
+    } catch (error) {
+      res.status(401);
+      throw new Error('Not authorized, token failed');
+    }
   }
-};
 
-module.exports = verifyToken;
+  if (!token) {
+    res.status(401);
+    throw new Error('Not authorized, no token');
+  }
+});

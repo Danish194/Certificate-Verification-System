@@ -1,11 +1,20 @@
-const express = require('express');
+import express from 'express';
+import { uploadCertificateData, getCertificate, downloadCertificate } from '../controllers/certificateController.js';
+import { protect } from '../middleware/authMiddleware.js';
+import multer from 'multer';
+
 const router = express.Router();
-const { uploadCertificates, getCertificateById } = require('../controllers/certificateController');
 
-// Route to upload certificates via Excel file (admin only)
-router.post('/upload', uploadCertificates);
+// File upload configuration using Multer
+const upload = multer({ dest: 'uploads/' });
 
-// Route to get a certificate by its unique ID
-router.get('/:certificateId', getCertificateById);
+// Route for uploading certificate data (admin only)
+router.post('/upload', protect, upload.single('file'), uploadCertificateData);
 
-module.exports = router;
+// Route to retrieve certificate by ID (students)
+router.get('/:certificateId', getCertificate);
+
+// Route to download certificate as PDF (students)
+router.get('/:certificateId/download', downloadCertificate);
+
+export default router;
