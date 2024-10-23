@@ -1,13 +1,12 @@
-import React from "react";
+import React from 'react';
 
 const CertificateTemplate = ({ certificate }) => {
   return (
-    <div className="certificate-template">
-      <h1>Certificate of Internship</h1>
-      <h2>{certificate.studentName}</h2>
-      <p>Internship Domain: {certificate.internshipDomain}</p>
-      <p>Start Date: {certificate.startDate}</p>
-      <p>End Date: {certificate.endDate}</p>
+    <div className="certificate">
+      <h1>Certificate of Completion</h1>
+      <p>This certifies that <strong>{certificate.studentName}</strong></p>
+      <p>Has completed an internship in <strong>{certificate.internshipDomain}</strong></p>
+      <p>From {new Date(certificate.startDate).toLocaleDateString()} to {new Date(certificate.endDate).toLocaleDateString()}</p>
     </div>
   );
 };

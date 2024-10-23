@@ -1,31 +1,26 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import cors from 'cors';
-import { connectDB } from './config/db.js';
+import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
-import certificateRoutes from './routes/certificateRoutes.js';
-import { errorHandler } from './middleware/errorMiddleware.js';
+import certRoutes from './routes/certificateRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
+import multer from 'multer';
 
-// Load environment variables
 dotenv.config();
-
-const app = express();
-const PORT = process.env.PORT || 5000;
-
-// Middlewares
-app.use(cors());
-app.use(express.json());
-
-// Database connection
 connectDB();
 
-// Routes
+const app = express();
+app.use(express.json());
+
+const upload = multer();
 app.use('/api/auth', authRoutes);
-app.use('/api/certificates', certificateRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/certificates', upload.single('file'), certRoutes);
 
-// Global Error Handler
-app.use(errorHandler);
+app.get('/', (req, res) => {
+    res.send('Hello World!');
+  });
+  
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

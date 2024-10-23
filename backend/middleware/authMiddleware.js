@@ -1,26 +1,15 @@
+// authMiddleware.js
 import jwt from 'jsonwebtoken';
-import asyncHandler from 'express-async-handler';
-import admin from 'firebase-admin';
 
-// Middleware for protected routes
-export const protect = asyncHandler(async (req, res, next) => {
-  let token;
-  
-  // Check if the token exists in the request headers
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
-      const decodedToken = await admin.auth().verifyIdToken(token);
-      req.user = decodedToken;
-      next();
-    } catch (error) {
-      res.status(401);
-      throw new Error('Not authorized, token failed');
-    }
-  }
+export const authMiddleware = (req, res, next) => {
+  const token = req.header('Authorization');
+  if (!token) return res.status(401).json({ message: 'No token provided' });
 
-  if (!token) {
-    res.status(401);
-    throw new Error('Not authorized, no token');
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // Attach decoded user information to the request object
+    next();
+  } catch (error) {
+    res.status(401).json({ message: 'Token is not valid' });
   }
-});
+};

@@ -1,20 +1,26 @@
 import express from 'express';
-import { uploadCertificateData, getCertificate, downloadCertificate } from '../controllers/certificateController.js';
-import { protect } from '../middleware/authMiddleware.js';
 import multer from 'multer';
+import { uploadCertificates, getCertificate } from '../controllers/certificateController.js';
+import { authMiddleware } from '../middleware/authMiddleware.js'; // Ensure the auth middleware path is correct
 
 const router = express.Router();
 
-// File upload configuration using Multer
-const upload = multer({ dest: 'uploads/' });
+// Multer configuration for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Folder where uploaded files will be saved
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname)); // Create unique filenames
+  }
+});
+const upload = multer({ storage: storage });
 
-// Route for uploading certificate data (admin only)
-router.post('/upload', protect, upload.single('file'), uploadCertificateData);
+// Route to handle certificate upload
+router.post('/upload', upload.single('file'), authMiddleware, uploadCertificates);
 
-// Route to retrieve certificate by ID (students)
-router.get('/:certificateId', getCertificate);
-
-// Route to download certificate as PDF (students)
-router.get('/:certificateId/download', downloadCertificate);
+// Route to fetch a certificate by ID
+router.get('/:id', authMiddleware, getCertificate);
 
 export default router;

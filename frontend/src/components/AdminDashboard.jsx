@@ -1,32 +1,40 @@
 import React, { useState } from 'react';
-import { uploadExcelFile } from '../services/certificateService';
+import axios from 'axios';
 
 const AdminDashboard = () => {
-    const [file, setFile] = useState(null);
-    const [message, setMessage] = useState('');
+  const [file, setFile] = useState(null);
 
-    const handleFileUpload = async (e) => {
-        e.preventDefault();
-        try {
-            if (file) {
-                await uploadExcelFile(file);
-                setMessage('File uploaded successfully');
-            }
-        } catch (error) {
-            setMessage('File upload failed');
-        }
-    };
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
 
-    return (
-        <div className="admin-dashboard">
-            <h1>Admin Dashboard</h1>
-            <form onSubmit={handleFileUpload}>
-                <input type="file" onChange={(e) => setFile(e.target.files[0])} />
-                <button type="submit">Upload File</button>
-            </form>
-            {message && <p>{message}</p>}
-        </div>
-    );
+  const handleFileUpload = async () => {
+    if (!file) {
+      alert('Please select a file first');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await axios.post('/api/certificates/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      alert(response.data.message);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Error uploading file');
+    }
+  };
+
+  return (
+    <div>
+      <h2>Admin Dashboard</h2>
+      <input type="file" onChange={handleFileChange} />
+      <button onClick={handleFileUpload}>Upload Certificates</button>
+    </div>
+  );
 };
 
 export default AdminDashboard;
