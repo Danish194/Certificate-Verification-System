@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { auth } from '../firebase.js';
+import { auth } from '../auth/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 
 const Register = () => {
   const [email, setEmail] = useState('');
@@ -16,11 +16,15 @@ const Register = () => {
     setError('');
 
     try {
-      // Create user with Firebase Authentication
       await createUserWithEmailAndPassword(auth, email, password);
+      // Save the user role to Firestore
+      const db = getFirestore();
+      const userDocRef = doc(db, 'users', email); // Use email as a unique identifier
 
-      // Save user role and other data to MongoDB
-      await axios.post('/api/users', { email, role });
+      await setDoc(userDocRef, {
+        role: role,
+        email: email,
+      });
 
       alert(`Registered as ${role}`);
       navigate('/'); // Redirect to home after registration
@@ -84,6 +88,7 @@ const Register = () => {
           </button>
         </form>
 
+        {/* Already have an account section */}
         <div className="mt-6 text-center">
           <p className="text-gray-600">Already have an account?</p>
           <Link to="/login" className="text-blue-500 hover:underline">

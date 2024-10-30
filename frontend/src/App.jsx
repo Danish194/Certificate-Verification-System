@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
-import AdminDashboard from './pages/Admindashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import SearchCertificate from './pages/SearchCertificatePage';
 import Header from './components/Header';
 import Register from './components/Register';
@@ -22,7 +22,6 @@ function App() {
   };
   return (
     <BrowserRouter>
-      {/* Include the Header and pass props */}
       <Header isLoggedIn={isLoggedIn} userRole={userRole} handleLogout={handleLogout} />
 
       <Routes>

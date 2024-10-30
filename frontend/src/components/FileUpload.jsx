@@ -1,6 +1,7 @@
-// src/components/FileUpload.jsx
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
+import { db } from '../auth/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 const FileUpload = () => {
   const [file, setFile] = useState(null);
@@ -35,34 +36,40 @@ const FileUpload = () => {
 
       // Convert sheet to JSON (array of objects)
       const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      
+      // Log the parsed data for debugging
+      console.log("Parsed Data: ", data);
 
-      // Validate and process data before sending it to the backend
-      const formattedData = data.slice(1).map((row) => ({
-        certificateID: row[0],
-        studentName: row[1],
-        internshipDomain: row[2],
-        startDate: row[3],
-        endDate: row[4],
-      }));
-
-      // Send data to the backend for MongoDB storage
+      // Process and save data to Firestore
       try {
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ studentData: formattedData }),
-        });
+        const studentDataCollection = collection(db, 'students'); // Create a collection named 'students'
+        
+        // Loop through each row of data and save it
+        for (let i = 1; i < data.length; i++) { // Start from 1 to skip the header row
+          const [certificateID, studentName, internshipDomain, startDate, endDate] = data[i];
 
-        if (response.ok) {
-          setMessage('File uploaded and data saved successfully!');
-          setError('');
-          setFile(null); // Reset file input
-        } else {
-          setError('Error uploading data to the server');
+          // Validate that none of the fields are undefined or null
+          if (!certificateID || !studentName || !internshipDomain || !startDate || !endDate) {
+            console.error('Missing data in row:', data[i]);
+            setError('One or more required fields are missing in the uploaded file.');
+            return;
+          }
+
+          await addDoc(studentDataCollection, {
+            certificateID,
+            studentName,
+            internshipDomain,
+            startDate,
+            endDate,
+          });
         }
+
+        setMessage('File uploaded and data saved successfully!');
+        setError('');
+        setFile(null); // Reset file input
       } catch (err) {
-        console.error('Error:', err);
-        setError('Error connecting to the server');
+        console.error('Error uploading data to Firestore: ', err);
+        setError('Error saving data to Firestore');
       }
     };
 

@@ -9,11 +9,6 @@ const AdminDashboard = () => {
   };
 
   const handleFileUpload = async () => {
-    if (!file) {
-      alert('Please select a file first');
-      return;
-    }
-
     const formData = new FormData();
     formData.append('file', file);
 
@@ -23,7 +18,6 @@ const AdminDashboard = () => {
       });
       alert(response.data.message);
     } catch (error) {
-      console.error('Error uploading file:', error);
       alert('Error uploading file');
     }
   };

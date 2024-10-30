@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import CertificateDetails from './CertificateDetails';
+import { db } from '../auth/firebase'; // Import Firestore
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import CertificateDetails from './CertificateDetails'; // New component for displaying certificate
 
 const SearchForm = () => {
   const [certificateId, setCertificateId] = useState('');
@@ -18,13 +19,23 @@ const SearchForm = () => {
     setLoading(true);
   
     try {
-      const response = await axios.get(`/api/certificates/${certificateId}`);
-      if (response.data) {
-        setCertificateData(response.data); // Show the certificate details
-        setError('');
-      } else {
+      const studentDataCollection = collection(db, 'students');
+      const q = query(studentDataCollection, where('certificateID', '==', parseInt(certificateId))); // If certificateID is a number
+
+
+  
+      // Execute the query
+      const querySnapshot = await getDocs(q);
+        console.log(querySnapshot);
+      if (querySnapshot.empty) {
+        console.log('No matching documents.');
         setError('No certificate found for this Certificate ID');
         setCertificateData(null); // Clear any previous data
+      } else {
+        // Get the first matched document (assuming certificate IDs are unique)
+        const result = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))[0];
+        setCertificateData(result); // Pass the result to the state to display
+        setError('');
       }
     } catch (err) {
       console.error('Error fetching certificate:', err);
@@ -33,40 +44,36 @@ const SearchForm = () => {
       setLoading(false);
     }
   };
-
+  
   return (
-    <div className="p-4 bg-gray-100 min-h-screen flex flex-col items-center justify-center">
-      <form onSubmit={handleSearch} className="w-full max-w-md bg-white p-6 rounded shadow-md">
-        <h2 className="text-2xl font-bold mb-4">Search Certificate</h2>
-        {error && <p className="text-red-500 mb-4">{error}</p>}
+    <div className="bg-white p-8 shadow-lg rounded-lg max-w-md mx-auto">
+      <h2 className="text-2xl font-semibold mb-6 text-center">Search for Certificate</h2>
+      {error && <p className="text-red-500 text-center">{error}</p>}
+      <form onSubmit={handleSearch}>
         <div className="mb-4">
-          <label className="block text-gray-700" htmlFor="certificateId">
+          <label htmlFor="certificateId" className="block text-gray-700 font-bold mb-2">
             Certificate ID
           </label>
           <input
             type="text"
             id="certificateId"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md"
+            placeholder="Enter your Certificate ID"
             value={certificateId}
             onChange={(e) => setCertificateId(e.target.value)}
-            className="border border-gray-300 p-2 w-full rounded"
-            required
           />
         </div>
         <button
           type="submit"
-          className={`bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 w-full ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
           disabled={loading}
         >
           {loading ? 'Searching...' : 'Search'}
         </button>
       </form>
-
-      {/* Display certificate details if found */}
-      {certificateData && (
-        <div className="mt-6">
-          <CertificateDetails certificate={certificateData} />
-        </div>
-      )}
+      
+      {/* Render Certificate Details after a successful search */}
+      {certificateData && <CertificateDetails certificate={certificateData} />}
     </div>
   );
 };

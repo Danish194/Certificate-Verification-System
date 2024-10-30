@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { auth } from '../firebase.js';
+import { auth } from '../auth/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
@@ -18,16 +18,18 @@ const Login = ({ onLogin }) => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Fetch role and other details from MongoDB after successful authentication
-      const response = await axios.get(`/api/users/${user.email}`);
-      const userData = response.data;
+      // Logic to determine user role should be here (e.g., fetch from Firestore)
+      const db = getFirestore();
+      const userDocRef = doc(db, 'users', email); // Use email as the identifier
 
-      // Assuming the role is stored in the MongoDB user data
-      const userRole = userData.role;
-      onLogin(userRole);
-
-      // Redirect based on role
-      navigate(userRole === 'Admin' ? '/admin-dashboard' : '/search');
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const userRole = userData.role; // Assuming the role is stored in the document
+        console.log(userRole);
+        onLogin(userRole);
+        navigate(userRole === 'Admin' ? '/admin-dashboard' : '/search');
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -73,9 +75,13 @@ const Login = ({ onLogin }) => {
           </button>
         </form>
 
+        {/* New Account Section */}
         <div className="mt-6 text-center">
           <p className="text-gray-600">Don't have an account?</p>
-          <Link to="/register" className="text-blue-500 hover:underline">
+          <Link
+            to="/register"
+            className="text-blue-500 hover:underline"
+          >
             Create New Account
           </Link>
         </div>
